@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JARVIS</title>
+<style>
+:root{--bg:#e6f0f6;--panel:#ffffffd9;--ink:#0d2330;--muted:#52707f;--line:#a9c7d6;--accent:#0a8fb3;--glow:#0a8fb355;--warn:#d9822b;--bubble:#d6e7f1;--ondark:#06141c;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#040b12;--panel:#0a1824cc;--ink:#d8f3ff;--muted:#7aa3b8;--line:#16445f;--accent:#2fd4ff;--glow:#2fd4ff55;--warn:#ffb347;--bubble:#0c2233}}
+:root[data-theme="dark"]{--bg:#040b12;--panel:#0a1824cc;--ink:#d8f3ff;--muted:#7aa3b8;--line:#16445f;--accent:#2fd4ff;--glow:#2fd4ff55;--warn:#ffb347;--bubble:#0c2233}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:hidden}
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+.vig{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(900px 520px at 50% 0%,var(--glow),transparent 65%),radial-gradient(ellipse at center,transparent 55%,var(--bg) 120%)}
+.wrap{position:relative;z-index:1;max-width:740px;margin:0 auto;padding:16px 14px 40px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.brand{letter-spacing:.38em;font-weight:700;font-size:15px;color:var(--accent);text-shadow:0 0 14px var(--glow)}
+.chips{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.chip{font-size:11px;letter-spacing:.12em;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:2px 7px;background:var(--panel)}
+.clock{text-align:right;font-variant-numeric:tabular-nums}
+.clock b{display:block;font-size:26px;letter-spacing:.06em;text-shadow:0 0 16px var(--glow)}
+.clock span{color:var(--muted);font-size:13px}
+.stage{display:flex;flex-direction:column;align-items:center;margin:14px 0 6px}
+.orb{position:relative;width:180px;height:180px;border-radius:50%;border:0;cursor:pointer;background:transparent;padding:0;-webkit-tap-highlight-color:transparent}
+.orb i{position:absolute;inset:0;border-radius:50%;border:2px solid var(--accent);opacity:.85;box-shadow:0 0 18px var(--glow)}
+.orb i:nth-child(1){animation:spin 10s linear infinite;border-style:dashed}
+.orb i:nth-child(2){inset:14px;animation:spin 6s linear infinite reverse;border-top-color:transparent;border-bottom-color:transparent}
+.orb i:nth-child(3){inset:32px;opacity:.5;animation:spin 14s linear infinite;border-style:dotted}
+.orb .core{position:absolute;inset:54px;border-radius:50%;background:radial-gradient(circle,var(--accent),transparent 72%);box-shadow:0 0 46px var(--glow);animation:pulse 3s ease-in-out infinite}
+.orb.listening .core{animation:pulse .8s ease-in-out infinite;background:radial-gradient(circle,#ff5a5a,transparent 72%);box-shadow:0 0 56px #ff5a5a99}
+.orb.thinking i:nth-child(1){animation-duration:1.6s}.orb.thinking i:nth-child(2){animation-duration:1s}
+.orb.speaking .core{animation:pulse .5s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{transform:scale(.85);opacity:.7}50%{transform:scale(1.12);opacity:1}}
+@media (prefers-reduced-motion:reduce){.orb i,.orb .core{animation:none!important}}
+#state{margin-top:8px;color:var(--muted);font-size:12px;letter-spacing:.22em;text-transform:uppercase;min-height:20px;text-align:center}
+.opts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0 10px;align-items:center}
+.opts label,.opts select{font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+.opts label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.dots{display:flex;gap:6px;padding:4px 8px;background:var(--panel);border:1px solid var(--line);border-radius:999px}
+.dots button{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+.dots button.on{border-color:var(--ink)}
+.quick{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px}
+.quick button,.mini{font:inherit;font-size:13px;white-space:nowrap;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer}
+.quick button:hover,.mini:hover{border-color:var(--accent)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 0 24px -12px var(--glow)}
+#log{padding:12px;max-height:330px;min-height:120px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.m{max-width:88%;padding:8px 12px;border-radius:12px;white-space:pre-wrap;word-wrap:break-word;font-size:15px}
+.m.u{align-self:flex-end;background:var(--accent);color:var(--ondark)}
+.m.a{align-self:flex-start;background:var(--bubble);border:1px solid var(--line)}
+.bar{display:flex;gap:8px;margin-top:10px}
+.bar input{flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 14px;outline:0}
+.bar input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+.bar button{font:inherit;font-weight:600;background:var(--accent);color:var(--ondark);border:0;border-radius:12px;padding:0 18px;cursor:pointer}
+.bar button:disabled{opacity:.5}
+.side{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+@media (max-width:620px){.side{grid-template-columns:1fr}}
+.side .panel{padding:10px 12px;font-size:14px;min-height:70px}
+.side h3{margin:0 0 6px;font-size:11px;letter-spacing:.22em;color:var(--accent);font-weight:600}
+.side ul{margin:0;padding-left:18px}.side li{margin:2px 0}.none{color:var(--muted)}
+.task{display:flex;gap:6px;align-items:flex-start;margin:3px 0;cursor:pointer}
+.task.done span{text-decoration:line-through;color:var(--muted)}
+.hint{color:var(--muted);font-size:13px;text-align:center;margin-top:14px}
+.err{color:var(--warn);font-size:13px;text-align:center;margin-top:8px;min-height:18px}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas><div class="vig"></div>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <div class="brand">J.A.R.V.I.S</div>
+      <div class="chips"><span class="chip" id="cNet">ONLINE</span><span class="chip" id="cBat">PWR --</span><span class="chip" id="cMode">STANDBY</span></div>
+    </div>
+    <div class="clock"><b id="time">--:--</b><span id="date"></span></div>
+  </div>
+
+  <div class="stage">
+    <button class="orb" id="orb" aria-label="Tap to talk"><i></i><i></i><i></i><div class="core"></div></button>
+    <div id="state">Tap the orb to talk</div>
+  </div>
+
+  <div class="opts">
+    <select id="lang" aria-label="Voice language">
+      <option value="en-US">English</option><option value="ur-PK">اردو Urdu</option>
+      <option value="hi-IN">हिन्दी Hindi</option><option value="ar-SA">العربية Arabic</option>
+    </select>
+    <select id="bgsel" aria-label="Background">
+      <option value="net">BG: Network</option><option value="matrix">BG: Matrix</option>
+      <option value="warp">BG: Warp</option><option value="off">BG: Off</option>
+    </select>
+    <div class="dots" id="dots"></div>
+    <label><input type="checkbox" id="voice" checked> Voice</label>
+    <label><input type="checkbox" id="hands"> Hands-free</label>
+    <label><input type="checkbox" id="wake"> Wake word</label>
+    <button class="mini" id="keybtn">🔑 API key</button>
+  </div>
+
+  <div class="panel" id="keybox" style="display:none;padding:12px;margin-bottom:10px">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Paste your Anthropic API key (from console.anthropic.com). It is saved only in this browser and sent only to Anthropic.</div>
+    <div class="bar" style="margin-top:0"><input id="key" type="password" placeholder="sk-ant-..." autocomplete="off"><button id="keysave">Save</button></div>
+  </div>
+  <div class="quick" id="quick"></div>
+
+  <div class="panel" id="log"></div>
+  <div class="bar">
+    <input id="txt" placeholder="Type a command… e.g. set an alarm for 6:30 am" autocomplete="off">
+    <button id="send">Send</button>
+  </div>
+  <div class="err" id="err"></div>
+
+  <div class="side">
+    <div class="panel"><h3>TIMERS</h3><div id="timers" class="none">No active timers</div></div>
+    <div class="panel"><h3>TASKS</h3><div id="tasks" class="none">No tasks</div></div>
+    <div class="panel"><h3>NOTES</h3><div id="notes" class="none">No notes yet</div></div>
+  </div>
+  <div class="hint">Say: “Jarvis, switch to red mode” · “Change background to matrix” · “Add task finish homework” · “Wake me at 6:30” · “Battery status”<br><button class="mini" id="clr" style="margin-top:10px">Clear chat</button></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const INSTR = "You are JARVIS, a calm, witty, highly capable personal AI assistant, like the one from Iron Man. " +
+  "Your replies are spoken aloud, so keep them short (1 to 3 sentences) unless the user asks for detail. No markdown, no symbols for lists, no emojis. " +
+  "Use your tools whenever they help (time, math, timers, alarms, notes, tasks, random numbers, device status, theme and background changes). Never claim you did something you did not do with a tool. " +
+  "You cannot browse the internet, open apps or control the device beyond your tools; say so briefly if asked. " +
+  "Always reply in the same language the user used. Be warm, polite and slightly witty.";
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v===null? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+let history = [], busy = false, sample = null, rec = null, listening = false, speaking = false;
+let notes = store.get("j_notes", []), tasks = store.get("j_tasks", []), timers = [], tid = 0;
+
+/* ---------- themes & background ---------- */
+const COLORS = {cyan:"#2fd4ff", red:"#ff4d4d", gold:"#ffc83d", green:"#3dff9a", purple:"#b583ff"};
+let ACC = COLORS.cyan, BGC = "#040b12", bgMode = store.get("j_bg", "net"), color = store.get("j_color", "cyan");
+function readColors(){ const cs = getComputedStyle(document.documentElement); ACC = cs.getPropertyValue("--accent").trim() || ACC; BGC = cs.getPropertyValue("--bg").trim() || BGC; }
+function hexRGB(h){ h = h.replace("#",""); if(h.length===3) h = h.split("").map(c=>c+c).join(""); return [parseInt(h.slice(0,2),16)||0, parseInt(h.slice(2,4),16)||0, parseInt(h.slice(4,6),16)||0]; }
+function applyColor(name){
+  if(!COLORS[name]) return false; color = name; store.set("j_color", name);
+  const r = document.documentElement.style; r.setProperty("--accent", COLORS[name]); r.setProperty("--glow", COLORS[name]+"55");
+  document.querySelectorAll("#dots button").forEach(b => b.classList.toggle("on", b.dataset.c===name)); readColors(); return true;
+}
+function applyBg(mode){
+  if(!["net","matrix","warp","off"].includes(mode)) return false; bgMode = mode; store.set("j_bg", mode); $("bgsel").value = mode; cx.clearRect(0,0,W,H); initBg(); return true;
+}
+Object.entries(COLORS).forEach(([n,h])=>{ const b=document.createElement("button"); b.style.background=h; b.dataset.c=n; b.title=n; b.onclick=()=>applyColor(n); $("dots").appendChild(b); });
+$("bgsel").onchange = e => applyBg(e.target.value);
+
+const cv = $("bg"), cx = cv.getContext("2d"); let W=0,H=0,parts=[],cols=[],stars=[],frame=0;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const GLY = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾅﾆﾇﾈﾉ0123456789JARVIS<>+=*";
+function resize(){ const d = Math.min(devicePixelRatio||1, 2); W = innerWidth; H = innerHeight; cv.width = W*d; cv.height = H*d; cv.style.width = W+"px"; cv.style.height = H+"px"; cx.setTransform(d,0,0,d,0,0); initBg(); }
+function newStar(){ return {a:Math.random()*6.283, r:Math.random()*40, s:.6+Math.random()*1.6}; }
+function initBg(){
+  const n = Math.round(Math.min(95, W*H/13000));
+  parts = Array.from({length:n}, ()=>({x:Math.random()*W, y:Math.random()*H, vx:(Math.random()-.5)*.55, vy:(Math.random()-.5)*.55}));
+  cols = Array.from({length:Math.ceil(W/16)}, ()=>Math.random()*(H/16));
+  stars = Array.from({length:130}, ()=>{ const s=newStar(); s.r=Math.random()*Math.max(W,H)*.6; return s; });
+  cx.clearRect(0,0,W,H); if(reduce) drawFrame();
+}
+function drawFrame(){
+  if(bgMode==="off"){ cx.clearRect(0,0,W,H); return; }
+  const [R,G,B] = hexRGB(ACC);
+  if(bgMode==="net"){
+    cx.clearRect(0,0,W,H);
+    for(const p of parts){ if(!reduce){ p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1; } cx.fillStyle=`rgba(${R},${G},${B},.75)`; cx.beginPath(); cx.arc(p.x,p.y,1.6,0,6.283); cx.fill(); }
+    for(let i=0;i<parts.length;i++) for(let j=i+1;j<parts.length;j++){
+      const dx=parts[i].x-parts[j].x, dy=parts[i].y-parts[j].y, d=dx*dx+dy*dy;
+      if(d<16000){ cx.strokeStyle=`rgba(${R},${G},${B},${.28*(1-d/16000)})`; cx.lineWidth=1; cx.beginPath(); cx.moveTo(parts[i].x,parts[i].y); cx.lineTo(parts[j].x,parts[j].y); cx.stroke(); } }
+  } else if(bgMode==="matrix"){
+    const [br,bg2,bb] = hexRGB(BGC); cx.fillStyle=`rgba(${br},${bg2},${bb},.14)`; cx.fillRect(0,0,W,H);
+    cx.font="15px monospace";
+    for(let i=0;i<cols.length;i++){ const y=Math.floor(cols[i])*16; cx.fillStyle=`rgba(${R},${G},${B},.9)`; cx.fillText(GLY[Math.floor(Math.random()*GLY.length)], i*16, y);
+      if(!reduce){ cols[i]+=.55; if(y>H && Math.random()>.975) cols[i]=0; } }
+  } else {
+    cx.clearRect(0,0,W,H); const mx=W/2, my=H/2, mr=Math.hypot(mx,my);
+    for(const s of stars){ const pr=s.r; if(!reduce) s.r += s.s*(1+s.r/180); if(s.r>mr){ Object.assign(s,newStar()); continue; }
+      const a=Math.min(1,s.r/mr*1.4); cx.strokeStyle=`rgba(${R},${G},${B},${a})`; cx.lineWidth=1+a*1.2;
+      cx.beginPath(); cx.moveTo(mx+Math.cos(s.a)*pr, my+Math.sin(s.a)*pr); cx.lineTo(mx+Math.cos(s.a)*s.r, my+Math.sin(s.a)*s.r); cx.stroke(); }
+  }
+}
+function loop(){ if(!document.hidden){ frame++; if(bgMode!=="matrix" || frame%2===0) drawFrame(); } requestAnimationFrame(loop); }
+addEventListener("resize", resize);
+document.documentElement.style.setProperty("--ondark", "#06141c");
+resize(); applyColor(color); $("bgsel").value = bgMode; readColors(); if(!reduce) loop();
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", ()=>setTimeout(readColors,50));
+
+/* ---------- clock & status chips ---------- */
+function tick(){
+  const d = new Date();
+  $("time").textContent = d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+  $("date").textContent = d.toLocaleDateString([], {weekday:"long", day:"numeric", month:"long"});
+  $("cNet").textContent = navigator.onLine ? "ONLINE" : "OFFLINE"; renderTimers();
+}
+setInterval(tick, 1000); tick();
+let batInfo = "unknown";
+navigator.getBattery?.().then(b=>{ const u=()=>{ batInfo = Math.round(b.level*100)+"%"+(b.charging?" charging":" on battery"); $("cBat").textContent="PWR "+Math.round(b.level*100)+"%"+(b.charging?" ⚡":""); }; u(); b.addEventListener("levelchange",u); b.addEventListener("chargingchange",u); }).catch(()=>{});
+
+/* ---------- UI helpers ---------- */
+function setState(cls, label){ $("orb").className = "orb " + cls; $("state").textContent = label; $("cMode").textContent = cls ? cls.toUpperCase() : "STANDBY"; }
+function addMsg(kind, text){ const el=document.createElement("div"); el.className="m "+kind; el.textContent=text; $("log").appendChild(el); $("log").scrollTop=$("log").scrollHeight; return el; }
+function showErr(t){ $("err").textContent = t || ""; }
+function greet(){ addMsg("a", "Good day. JARVIS online and ready. Tap the orb and speak, or type below."); }
+greet();
+[["What time is it?","🕒 Time"],["Tell me a short joke","😄 Joke"],["Give me a motivational quote","💪 Motivate"],["What is my device status?","🔋 Status"],["Help me plan my day. Ask me what I need to do.","📅 Plan day"],["Switch to red mode","🔴 Red mode"]].forEach(([q,l])=>{
+  const b=document.createElement("button"); b.textContent=l; b.onclick=()=>ask(q); $("quick").appendChild(b); });
+$("clr").onclick = ()=>{ history=[]; $("log").textContent=""; greet(); };
+
+/* ---------- lists ---------- */
+function renderTimers(){
+  const box=$("timers"); if(!timers.length){ box.className="none"; box.textContent="No active timers"; return; }
+  box.className=""; box.textContent=""; const ul=document.createElement("ul");
+  timers.forEach(t=>{ const s=Math.max(0,Math.round((t.end-Date.now())/1000)); const li=document.createElement("li");
+    li.textContent=t.label+" — "+(s>=3600?Math.floor(s/3600)+"h ":"")+Math.floor(s%3600/60)+"m "+String(s%60).padStart(2,"0")+"s"; ul.appendChild(li); });
+  box.appendChild(ul);
+}
+function renderNotes(){
+  const box=$("notes"); if(!notes.length){ box.className="none"; box.textContent="No notes yet"; return; }
+  box.className=""; box.textContent=""; const ul=document.createElement("ul"); notes.forEach(n=>{ const li=document.createElement("li"); li.textContent=n; ul.appendChild(li); }); box.appendChild(ul);
+}
+function renderTasks(){
+  const box=$("tasks"); if(!tasks.length){ box.className="none"; box.textContent="No tasks"; return; }
+  box.className=""; box.textContent="";
+  tasks.forEach((t,i)=>{ const d=document.createElement("div"); d.className="task"+(t.done?" done":""); const c=document.createElement("input"); c.type="checkbox"; c.checked=t.done;
+    const s=document.createElement("span"); s.textContent=t.text; d.append(c,s);
+    d.onclick=e=>{ if(e.target!==c) c.checked=!c.checked; t.done=c.checked; store.set("j_tasks",tasks); renderTasks(); }; box.appendChild(d); });
+}
+renderNotes(); renderTasks();
+
+/* ---------- tools ---------- */
+function beep(){ try{ const ac=new (window.AudioContext||window.webkitAudioContext)();
+  [0,.35,.7].forEach(t=>{ const o=ac.createOscillator(),g=ac.createGain(); o.frequency.value=880; o.connect(g); g.connect(ac.destination);
+    g.gain.setValueAtTime(.2,ac.currentTime+t); g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+t+.25); o.start(ac.currentTime+t); o.stop(ac.currentTime+t+.26); }); }catch(e){} }
+function startTimer(seconds, label){
+  seconds=Math.max(1,Math.round(seconds)); const t={id:++tid,label,end:Date.now()+seconds*1000}; timers.push(t); renderTimers();
+  setTimeout(()=>{ timers=timers.filter(x=>x.id!==t.id); renderTimers(); beep(); const m="Your timer is complete: "+label+"."; addMsg("a",m); say(m); }, seconds*1000);
+}
+const S = (p, req) => ({type:"object", properties:p, required:req||[]});
+const TOOLS = [
+  {name:"get_time", description:"Get the current local date and time of the user's device.", inputSchema:S({}), execute:()=>new Date().toLocaleString([], {dateStyle:"full", timeStyle:"short"})},
+  {name:"calculate", description:"Evaluate a math expression using numbers and + - * / % ( ). Convert percentages first, e.g. 15% of 2400 is 0.15*2400.", inputSchema:S({expression:{type:"string"}},["expression"]),
+    execute:({expression})=>{ if(!/^[0-9+\-*/().%\s]+$/.test(expression)) return "Error: invalid expression"; try{ return String(Function('"use strict";return ('+expression+')')()); }catch(e){ return "Error: could not calculate"; } }},
+  {name:"set_timer", description:"Start a countdown timer or reminder that beeps and announces when finished.", inputSchema:S({seconds:{type:"number"},label:{type:"string"}},["seconds"]),
+    execute:({seconds,label})=>{ label=label||"Timer"; startTimer(seconds,label); return "Timer '"+label+"' set for "+Math.round(seconds)+" seconds."; }},
+  {name:"set_alarm", description:"Set an alarm for a clock time today (or tomorrow if it has passed). Use 24-hour hour and minute.", inputSchema:S({hour:{type:"number"},minute:{type:"number"},label:{type:"string"}},["hour"]),
+    execute:({hour,minute,label})=>{ const n=new Date(), t=new Date(); t.setHours(hour, minute||0, 0, 0); if(t<=n) t.setDate(t.getDate()+1);
+      startTimer((t-n)/1000, label||"Alarm"); return "Alarm set for "+t.toLocaleString([], {weekday:"long",hour:"2-digit",minute:"2-digit"})+". The page must stay open."; }},
+  {name:"add_note", description:"Save a short note for the user.", inputSchema:S({text:{type:"string"}},["text"]), execute:({text})=>{ notes.push(text); store.set("j_notes",notes); renderNotes(); return "Note saved."; }},
+  {name:"list_notes", description:"Read back all saved notes.", inputSchema:S({}), execute:()=>notes.length? notes.map((n,i)=>(i+1)+". "+n).join("\n") : "There are no notes."},
+  {name:"clear_notes", description:"Delete all saved notes.", inputSchema:S({}), execute:()=>{ notes=[]; store.set("j_notes",notes); renderNotes(); return "All notes deleted."; }},
+  {name:"add_task", description:"Add an item to the user's to-do list.", inputSchema:S({text:{type:"string"}},["text"]), execute:({text})=>{ tasks.push({text,done:false}); store.set("j_tasks",tasks); renderTasks(); return "Task added."; }},
+  {name:"list_tasks", description:"Read the to-do list with numbers and done status.", inputSchema:S({}), execute:()=>tasks.length? tasks.map((t,i)=>(i+1)+". "+t.text+(t.done?" (done)":"")).join("\n") : "The to-do list is empty."},
+  {name:"complete_task", description:"Mark a to-do item as done by its number (1 is first).", inputSchema:S({number:{type:"number"}},["number"]),
+    execute:({number})=>{ const t=tasks[number-1]; if(!t) return "No task with that number."; t.done=true; store.set("j_tasks",tasks); renderTasks(); return "Marked done: "+t.text; }},
+  {name:"clear_tasks", description:"Delete all to-do items.", inputSchema:S({}), execute:()=>{ tasks=[]; store.set("j_tasks",tasks); renderTasks(); return "To-do list cleared."; }},
+  {name:"random_number", description:"Pick a random whole number between min and max inclusive. Also use for dice (1-6).", inputSchema:S({min:{type:"number"},max:{type:"number"}},["min","max"]),
+    execute:({min,max})=>String(Math.floor(Math.random()*(max-min+1))+min)},
+  {name:"flip_coin", description:"Flip a coin.", inputSchema:S({}), execute:()=>Math.random()<.5?"Heads":"Tails"},
+  {name:"device_status", description:"Get battery, internet connection and language of the device.", inputSchema:S({}),
+    execute:()=>"Battery: "+batInfo+". Internet: "+(navigator.onLine?"connected":"offline")+". Browser language: "+navigator.language+"."},
+  {name:"set_theme", description:"Change the interface colour of the assistant.", inputSchema:S({color:{type:"string",enum:Object.keys(COLORS)}},["color"]),
+    execute:({color})=> applyColor(color) ? "Interface is now "+color+"." : "Unknown colour."},
+  {name:"set_background", description:"Change the animated background. net = glowing network, matrix = falling code, warp = starfield, off = none.", inputSchema:S({style:{type:"string",enum:["net","matrix","warp","off"]}},["style"]),
+    execute:({style})=> applyBg(style) ? "Background changed to "+style+"." : "Unknown background."}
+];
+
+/* ---------- speech out ---------- */
+function say(text){
+  return new Promise(res=>{
+    if(!$("voice").checked || !("speechSynthesis" in window)) return res();
+    try{
+      speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(text); u.lang = /[\u0600-\u06FF\u0900-\u097F]/.test(text) ? $("lang").value : "en-GB";
+      const vs=speechSynthesis.getVoices(); const v=vs.find(v=>v.lang===u.lang)||vs.find(v=>v.lang.startsWith(u.lang.slice(0,2))); if(v) u.voice=v;
+      u.rate=1; u.pitch=.9; speaking=true; setState("speaking","Speaking — tap to stop");
+      const done=()=>{ speaking=false; res(); }; u.onend=done; u.onerror=done; speechSynthesis.speak(u);
+    }catch(e){ speaking=false; res(); }
+  });
+}
+
+/* ---------- Claude API (standalone) ---------- */
+const MODEL = "claude-sonnet-5-5";
+function refreshKeyBox(){ $("keybox").style.display = store.get("j_key","") ? "none" : "block"; }
+$("keybtn").onclick = ()=>{ const b=$("keybox"); b.style.display = b.style.display==="none" ? "block" : "none"; $("key").value = store.get("j_key",""); };
+$("keysave").onclick = ()=>{ const v=$("key").value.trim(); store.set("j_key", v); $("key").value=""; refreshKeyBox(); showErr(v ? "" : "Key removed."); };
+refreshKeyBox();
+async function callClaude(turns, bubble){
+  const key = store.get("j_key","");
+  if(!key){ $("keybox").style.display="block"; throw {message:"Please paste your Anthropic API key first (🔑 API key)."}; }
+  const tools = TOOLS.map(t=>({name:t.name, description:t.description, input_schema:t.inputSchema}));
+  const msgs = turns.slice();
+  for(let step=0; step<6; step++){
+    const res = await fetch("https://api.anthropic.com/v1/messages", {method:"POST",
+      headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:MODEL, max_tokens:1000, system:INSTR+"\nCurrent time: "+new Date().toLocaleString(), tools, messages:msgs})});
+    let data = {}; try{ data = await res.json(); }catch(e){}
+    if(!res.ok) throw {message:(data.error && data.error.message) || ("API error "+res.status+". Check your key and internet.")};
+    msgs.push({role:"assistant", content:data.content});
+    const text = data.content.filter(b=>b.type==="text").map(b=>b.text).join("");
+    if(text){ bubble.textContent = text; $("log").scrollTop=$("log").scrollHeight; }
+    if(data.stop_reason!=="tool_use") return text;
+    const results=[];
+    for(const b of data.content){ if(b.type!=="tool_use") continue; let out;
+      try{ out = String(await TOOLS.find(t=>t.name===b.name).execute(b.input)); }catch(e){ out = "Error: "+(e&&e.message||e); }
+      results.push({type:"tool_result", tool_use_id:b.id, content:out}); }
+    msgs.push({role:"user", content:results});
+  }
+  return "I ran out of steps on that one.";
+}
+
+/* ---------- brain ---------- */
+async function ask(text){
+  if(busy||!text.trim()) return;
+  busy=true; $("send").disabled=true; showErr("");
+  addMsg("u",text); history.push({role:"user",content:text}); setState("thinking","Thinking"); const bubble=addMsg("a","…");
+  try{
+    const turns=history.slice(-11).map(m=>({role:m.role,content:m.content}));
+    const text=await callClaude(turns,bubble);
+    const r={text};
+    const reply=(r.text||"").trim()||"Done."; bubble.textContent=reply; history.push({role:"assistant",content:reply}); await say(reply);
+  }catch(e){
+    history.pop(); bubble.remove();
+    showErr((e&&e.message)||"Something went wrong. Try again.");
+  }finally{
+    busy=false; $("send").disabled=false; setState("","Tap the orb to talk");
+    if($("hands").checked && !listening) setTimeout(listen,400);
+  }
+}
+
+/* ---------- speech in ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+function listen(){
+  if(busy) return;
+  if(speaking){ try{speechSynthesis.cancel();}catch(e){} speaking=false; setState("","Tap the orb to talk"); return; }
+  if(!SR){ showErr("Voice input is not supported in this browser. Please type instead (Chrome or Safari support voice)."); return; }
+  if(listening){ try{rec.stop();}catch(e){} return; }
+  rec=new SR(); rec.lang=$("lang").value; rec.interimResults=true; rec.continuous=false; let fin="", last="";
+  rec.onstart=()=>{ listening=true; setState("listening", $("wake").checked ? "Say “Jarvis …”" : "Listening…"); showErr(""); };
+  rec.onresult=ev=>{ let t=""; for(let i=ev.resultIndex;i<ev.results.length;i++){ t+=ev.results[i][0].transcript; if(ev.results[i].isFinal) fin=t; } last=t; $("state").textContent=t||"Listening…"; };
+  rec.onerror=ev=>{ listening=false;
+    if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){ $("hands").checked=false; showErr("Microphone is blocked here. Allow the mic in your browser, or type instead."); }
+    else if(ev.error!=="no-speech"&&ev.error!=="aborted"){ showErr("Voice error: "+ev.error+". You can type instead."); } };
+  rec.onend=()=>{ listening=false; let t=(fin||last||"").trim(); setState("","Tap the orb to talk");
+    if(t && $("wake").checked){ if(/jarvis|jarvish|جارويس|जार्विस/i.test(t)) t=t.replace(/^(hey|ok|okay)?\s*,?\s*(jarvis|jarvish|جارويس|जार्विस)[\s,.:!]*/i,"").trim()||"I am here"; else t=""; }
+    if(t) ask(t); else if($("hands").checked && !busy) setTimeout(listen,600); };
+  try{ rec.start(); }catch(e){ listening=false; }
+}
+$("orb").onclick=listen;
+$("send").onclick=()=>{ const t=$("txt").value; $("txt").value=""; ask(t); };
+$("txt").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("send").click(); } });
+$("hands").onchange=()=>{ if($("hands").checked) listen(); else { try{rec&&rec.stop();}catch(e){} } };
+$("wake").onchange=()=>{ if($("wake").checked){ $("hands").checked=true; listen(); } };
+if("speechSynthesis" in window) speechSynthesis.getVoices();
+</script>
+</body>
+</html>
